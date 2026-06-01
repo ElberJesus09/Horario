@@ -1,0 +1,12 @@
+{
+  "name": "horario-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Planificador de horarios academicos con exportacion Excel/PDF.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: horario-pro
+    env: node
+    plan: free
+    buildCommand: ""
+    startCommand: node server.js

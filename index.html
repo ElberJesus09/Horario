@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horario Pro</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Resumen del horario">
+        <div>
+          <p class="eyebrow">Planificador academico</p>
+          <h1>Horario Pro</h1>
+        </div>
+        <div class="stats" aria-live="polite">
+          <article>
+            <span id="courseCount">0</span>
+            <small>Cursos</small>
+          </article>
+          <article>
+            <span id="conflictCount">0</span>
+            <small>Cruces</small>
+          </article>
+          <article>
+            <span id="hourCount">0</span>
+            <small>Horas</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel editor-panel">
+          <form id="courseForm" autocomplete="off">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Entrada</p>
+                <h2 id="formTitle">Nuevo curso</h2>
+              </div>
+              <button class="icon-button muted" id="resetFormBtn" type="button" title="Limpiar formulario" aria-label="Limpiar formulario">
+                <span aria-hidden="true">R</span>
+              </button>
+            </div>
+
+            <input type="hidden" id="courseId" />
+
+            <label>
+              Curso
+              <input id="courseName" required placeholder="Calculo I" />
+            </label>
+
+            <label>
+              Profesor
+              <input id="teacherName" required placeholder="Dra. Salazar" />
+            </label>
+
+            <div class="two-cols">
+              <label>
+                Dia
+                <select id="day" required>
+                  <option value="Lunes">Lunes</option>
+                  <option value="Martes">Martes</option>
+                  <option value="Miercoles">Miercoles</option>
+                  <option value="Jueves">Jueves</option>
+                  <option value="Viernes">Viernes</option>
+                  <option value="Sabado">Sabado</option>
+                </select>
+              </label>
+
+              <label>
+                Aula
+                <input id="room" placeholder="B-204" />
+              </label>
+            </div>
+
+            <div class="two-cols">
+              <label>
+                Inicio
+                <select id="startTime" required></select>
+              </label>
+
+              <label>
+                Fin
+                <select id="endTime" required></select>
+              </label>
+            </div>
+
+            <label>
+              Color
+              <input id="color" type="color" value="#2563eb" />
+            </label>
+
+            <div class="form-actions">
+              <button class="primary" type="submit" id="saveCourseBtn">Guardar curso</button>
+              <button type="button" id="deleteCourseBtn" class="danger ghost" hidden>Eliminar</button>
+            </div>
+          </form>
+
+          <div class="tools">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Archivos</p>
+                <h2>Gestion del horario</h2>
+              </div>
+            </div>
+
+            <section class="file-section" aria-labelledby="exportTitle">
+              <div class="file-section-heading">
+                <h3 id="exportTitle">Exportar</h3>
+                <p>Genera archivos finales o guarda tu avance.</p>
+              </div>
+              <div class="button-grid">
+                <button type="button" id="downloadExcelBtn">Excel</button>
+                <button type="button" id="downloadPdfBtn">PDF</button>
+                <button type="button" id="downloadProgressBtn">Avance</button>
+              </div>
+            </section>
+
+            <section class="file-section" aria-labelledby="importTitle">
+              <div class="file-section-heading">
+                <h3 id="importTitle">Importar</h3>
+                <p>Carga una plantilla o recupera un avance guardado.</p>
+              </div>
+              <button type="button" id="downloadTemplateBtn" class="wide-action">Descargar plantilla</button>
+              <label class="file-drop" for="fileInput">
+                <input id="fileInput" type="file" accept=".json,.xlsx,.xls" />
+                <span>Subir avance o plantilla Excel</span>
+              </label>
+            </section>
+          </div>
+        </aside>
+
+        <section class="schedule-area">
+          <div class="panel schedule-toolbar">
+            <div>
+              <p class="eyebrow">Vista semanal</p>
+              <h2>Horario</h2>
+            </div>
+            <div class="range-controls" aria-label="Rango visible">
+              <label>
+                Desde
+                <select id="rangeStart"></select>
+              </label>
+              <label>
+                Hasta
+                <select id="rangeEnd"></select>
+              </label>
+              <button type="button" id="clearAllBtn" class="ghost">Limpiar todo</button>
+            </div>
+          </div>
+
+          <div class="conflict-banner" id="conflictBanner" hidden></div>
+
+          <div class="schedule-wrap" id="scheduleWrap">
+            <div class="schedule-grid" id="scheduleGrid" aria-label="Horario semanal"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="appModal" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMessage">
+        <div class="modal-icon" id="modalIcon" aria-hidden="true">!</div>
+        <div>
+          <p class="eyebrow" id="modalKicker">Aviso</p>
+          <h2 id="modalTitle">Mensaje</h2>
+          <p id="modalMessage"></p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="modalCancelBtn" class="ghost">Cancelar</button>
+          <button type="button" id="modalConfirmBtn" class="primary">Aceptar</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="courseModal" hidden>
+      <section class="modal-card course-modal-card" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle" aria-describedby="courseModalMessage">
+        <div class="modal-icon course-modal-color" id="courseModalColor" aria-hidden="true"></div>
+        <div>
+          <p class="eyebrow" id="courseModalKicker">Curso seleccionado</p>
+          <h2 id="courseModalTitle">Curso</h2>
+          <p id="courseModalMessage"></p>
+        </div>
+        <div class="modal-actions split-actions">
+          <button type="button" id="courseModalCloseBtn" class="ghost">Cerrar</button>
+          <button type="button" id="courseModalDeleteBtn" class="danger ghost">Eliminar</button>
+          <button type="button" id="courseModalEditBtn" class="primary">Editar</button>
+        </div>
+      </section>
+    </div>
+
+    <template id="courseBlockTemplate">
+      <button class="course-block" type="button">
+        <strong></strong>
+        <span class="teacher"></span>
+        <small class="meta"></small>
+      </button>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
