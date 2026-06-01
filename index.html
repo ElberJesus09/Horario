@@ -52,7 +52,7 @@
 
             <label>
               Profesor
-              <input id="teacherName" required placeholder="Dra. Salazar" />
+              <input id="teacherName" placeholder="Dra. Salazar" />
             </label>
 
             <div class="two-cols">
@@ -77,14 +77,15 @@
             <div class="two-cols">
               <label>
                 Inicio
-                <select id="startTime" required></select>
+                <input id="startTime" list="courseTimeOptions" required inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="08:00" title="Usa el formato HH:MM" />
               </label>
 
               <label>
                 Fin
-                <select id="endTime" required></select>
+                <input id="endTime" list="courseTimeOptions" required inputmode="numeric" pattern="^([01][0-9]|2[0-3]|24):[0-5][0-9]$" placeholder="10:00" title="Usa el formato HH:MM" />
               </label>
             </div>
+            <datalist id="courseTimeOptions"></datalist>
 
             <label>
               Color
@@ -105,29 +106,33 @@
               </div>
             </div>
 
-            <section class="file-section" aria-labelledby="exportTitle">
-              <div class="file-section-heading">
+            <details class="file-section">
+              <summary class="file-section-heading">
                 <h3 id="exportTitle">Exportar</h3>
                 <p>Genera archivos finales o guarda tu avance.</p>
+              </summary>
+              <div class="file-section-content">
+                <div class="button-grid">
+                  <button type="button" id="downloadExcelBtn">Excel</button>
+                  <button type="button" id="downloadPdfBtn">PDF</button>
+                  <button type="button" id="downloadProgressBtn">Guardar avance</button>
+                </div>
               </div>
-              <div class="button-grid">
-                <button type="button" id="downloadExcelBtn">Excel</button>
-                <button type="button" id="downloadPdfBtn">PDF</button>
-                <button type="button" id="downloadProgressBtn">Avance</button>
-              </div>
-            </section>
+            </details>
 
-            <section class="file-section" aria-labelledby="importTitle">
-              <div class="file-section-heading">
+            <details class="file-section">
+              <summary class="file-section-heading">
                 <h3 id="importTitle">Importar</h3>
                 <p>Carga una plantilla o recupera un avance guardado.</p>
+              </summary>
+              <div class="file-section-content">
+                <button type="button" id="downloadTemplateBtn" class="wide-action">Descargar plantilla</button>
+                <label class="file-drop" for="fileInput">
+                  <input id="fileInput" type="file" accept=".json,.xlsx,.xls" />
+                  <span>Subir avance o plantilla Excel</span>
+                </label>
               </div>
-              <button type="button" id="downloadTemplateBtn" class="wide-action">Descargar plantilla</button>
-              <label class="file-drop" for="fileInput">
-                <input id="fileInput" type="file" accept=".json,.xlsx,.xls" />
-                <span>Subir avance o plantilla Excel</span>
-              </label>
-            </section>
+            </details>
           </div>
         </aside>
 

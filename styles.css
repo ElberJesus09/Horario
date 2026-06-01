@@ -264,7 +264,7 @@ select:focus {
   border: 1px solid #e3e9f4;
   border-radius: 8px;
   background: #fbfdff;
-  padding: 12px;
+  overflow: hidden;
 }
 
 .file-section + .file-section {
@@ -272,7 +272,49 @@ select:focus {
 }
 
 .file-section-heading {
-  margin-bottom: 10px;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  padding: 12px 40px 12px 12px;
+  position: relative;
+  user-select: none;
+}
+
+.file-section-heading::-webkit-details-marker {
+  display: none;
+}
+
+.file-section-heading::after {
+  content: "+";
+  align-items: center;
+  background: #eef4ff;
+  border: 1px solid #d8e3f5;
+  border-radius: 8px;
+  color: var(--primary);
+  display: flex;
+  font-size: 1rem;
+  font-weight: 900;
+  height: 26px;
+  justify-content: center;
+  position: absolute;
+  right: 10px;
+  top: 13px;
+  width: 26px;
+}
+
+.file-section[open] .file-section-heading::after {
+  content: "-";
+}
+
+.file-section-heading:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: -3px;
+}
+
+.file-section-content {
+  border-top: 1px solid #e3e9f4;
+  padding: 12px;
 }
 
 .file-section h3 {

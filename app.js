@@ -17,6 +17,7 @@ const els = {
   room: document.querySelector("#room"),
   startTime: document.querySelector("#startTime"),
   endTime: document.querySelector("#endTime"),
+  courseTimeOptions: document.querySelector("#courseTimeOptions"),
   color: document.querySelector("#color"),
   resetFormBtn: document.querySelector("#resetFormBtn"),
   deleteCourseBtn: document.querySelector("#deleteCourseBtn"),
@@ -53,6 +54,9 @@ const els = {
 
 let modalResolver = null;
 let selectedCourseId = null;
+let lastDownloadedProgress = "";
+let isProgressReminderOpen = false;
+let isReloadShortcut = false;
 
 function closeModal(result = false) {
   els.modal.hidden = true;
@@ -96,7 +100,7 @@ function notifyError(title, message) {
   return showModal({ title, message, kicker: "Revisar", icon: "!", type: "danger" });
 }
 
-function confirmAction(title, message, confirmText = "Aceptar") {
+function confirmAction(title, message, confirmText = "Aceptar", cancelText = "Cancelar") {
   return showModal({
     title,
     message,
@@ -104,13 +108,38 @@ function confirmAction(title, message, confirmText = "Aceptar") {
     icon: "?",
     type: "danger",
     confirmText,
+    cancelText,
     showCancel: true,
   });
 }
 
-function timeToMinutes(time) {
-  const [hours, minutes] = time.split(":").map(Number);
+function parseTime(time) {
+  const match = String(time || "").trim().match(/^([01]\d|2[0-4]):([0-5]\d)$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours === 24 && minutes !== 0) return null;
   return hours * 60 + minutes;
+}
+
+function timeToMinutes(time) {
+  const minutes = parseTime(time);
+  if (minutes === null) return 0;
+  return minutes;
+}
+
+function normalizeTime(time, fallback) {
+  const value = String(time || "").trim().slice(0, 5);
+  return parseTime(value) === null ? fallback : value;
+}
+
+function buildTimeSuggestions(datalist) {
+  datalist.innerHTML = "";
+  for (let minutes = 0; minutes <= 24 * 60; minutes += 30) {
+    const option = document.createElement("option");
+    option.value = minutesToTime(minutes);
+    datalist.append(option);
+  }
 }
 
 function buildTimeOptions(select, selectedValue) {
@@ -127,8 +156,9 @@ function buildTimeOptions(select, selectedValue) {
 }
 
 function setupTimeSelects() {
-  buildTimeOptions(els.startTime, "08:00");
-  buildTimeOptions(els.endTime, "10:00");
+  buildTimeSuggestions(els.courseTimeOptions);
+  els.startTime.value = "08:00";
+  els.endTime.value = "10:00";
   buildTimeOptions(els.rangeStart, DEFAULT_RANGE.start);
   buildTimeOptions(els.rangeEnd, DEFAULT_RANGE.end);
 }
@@ -162,8 +192,8 @@ function normalizeCourse(raw) {
     teacher: String(raw.teacher || raw.Profesor || "").trim(),
     day: DAYS.includes(raw.day || raw.Dia) ? raw.day || raw.Dia : "Lunes",
     room: String(raw.room || raw.Aula || "").trim(),
-    start: String(raw.start || raw.Inicio || "08:00").slice(0, 5),
-    end: String(raw.end || raw.Fin || "10:00").slice(0, 5),
+    start: normalizeTime(raw.start || raw.Inicio, "08:00"),
+    end: normalizeTime(raw.end || raw.Fin, "10:00"),
     color: raw.color || raw.Color || "#2563eb",
   };
 }
@@ -230,7 +260,11 @@ function openCourseModal(id) {
   selectedCourseId = id;
   els.courseModalColor.style.background = course.color;
   els.courseModalTitle.textContent = course.name;
-  els.courseModalMessage.textContent = `${course.teacher} | ${course.day} ${course.start}-${course.end}${course.room ? ` | Aula ${course.room}` : ""}`;
+  els.courseModalMessage.textContent = [
+    course.teacher,
+    `${course.day} ${course.start}-${course.end}`,
+    course.room ? `Aula ${course.room}` : "",
+  ].filter(Boolean).join(" | ");
   els.courseModal.hidden = false;
   els.courseModalEditBtn.focus();
 }
@@ -413,6 +447,31 @@ function downloadPdf() {
 function downloadProgress() {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   downloadBlob(blob, "avance-horario.json");
+  lastDownloadedProgress = progressSignature();
+}
+
+function progressSignature() {
+  return JSON.stringify(state);
+}
+
+function shouldWarnBeforeClose() {
+  return state.courses.length > 0 && progressSignature() !== lastDownloadedProgress;
+}
+
+async function remindDownloadProgress() {
+  if (!shouldWarnBeforeClose() || isProgressReminderOpen) return false;
+  isProgressReminderOpen = true;
+  const shouldDownload = await confirmAction(
+    "Guarda tu avance",
+    "Antes de cerrar o recargar, descarga el avance para poder retomar este horario despues.",
+    "Descargar avance",
+    "Seguir editando",
+  );
+  isProgressReminderOpen = false;
+  if (!shouldDownload) return true;
+  downloadProgress();
+  notifySuccess("Avance guardado", "Se descargo avance-horario.json para retomarlo despues.");
+  return true;
 }
 
 function readWorkbook(file) {
@@ -445,7 +504,7 @@ async function importFile(file) {
         return;
       }
       const rows = await readWorkbook(file);
-      state.courses = rows.map(normalizeCourse).filter((course) => course.name && course.teacher);
+      state.courses = rows.map(normalizeCourse).filter((course) => course.name);
       state.range = { ...DEFAULT_RANGE };
     }
     els.rangeStart.value = state.range.start;
@@ -464,7 +523,15 @@ els.form.addEventListener("submit", (event) => {
   event.preventDefault();
   const start = els.startTime.value;
   const end = els.endTime.value;
-  if (timeToMinutes(end) <= timeToMinutes(start)) {
+  const startMinutes = parseTime(start);
+  const endMinutes = parseTime(end);
+
+  if (startMinutes === null || endMinutes === null) {
+    notifyError("Hora invalida", "Escribe las horas con el formato HH:MM, por ejemplo 07:15.");
+    return;
+  }
+
+  if (endMinutes <= startMinutes) {
     notifyError("Horario invalido", "La hora final debe ser mayor que la hora inicial.");
     return;
   }
@@ -548,9 +615,23 @@ els.courseModalDeleteBtn.addEventListener("click", () => deleteCourse(selectedCo
 els.courseModal.addEventListener("click", (event) => {
   if (event.target === els.courseModal) closeCourseModal();
 });
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", async (event) => {
   if (!els.modal.hidden && event.key === "Escape") closeModal(false);
   if (!els.courseModal.hidden && event.key === "Escape") closeCourseModal();
+
+  const key = event.key.toLowerCase();
+  isReloadShortcut = event.key === "F5" || ((event.ctrlKey || event.metaKey) && key === "r");
+  const isCloseShortcut = ((event.ctrlKey || event.metaKey) && key === "w") || (event.altKey && event.key === "F4");
+  if (isCloseShortcut && shouldWarnBeforeClose()) {
+    event.preventDefault();
+    await remindDownloadProgress();
+  }
+});
+
+window.addEventListener("beforeunload", (event) => {
+  if (isReloadShortcut || !shouldWarnBeforeClose()) return;
+  event.preventDefault();
+  event.returnValue = "";
 });
 
 setupTimeSelects();
