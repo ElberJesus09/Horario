@@ -12,7 +12,7 @@ const types = {
   ".yaml": "text/yaml; charset=utf-8",
 };
 
-const server = http.createServer((req, res) => {
+function handleRequest(req, res) {
   const urlPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
   const safePath = path.normalize(urlPath).replace(/^(\.\.[/\\])+/, "");
   const filePath = path.join(root, safePath === "/" ? "index.html" : safePath);
@@ -34,8 +34,14 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": types[path.extname(filePath)] || "application/octet-stream" });
     res.end(data);
   });
-});
+}
 
-server.listen(port, () => {
-  console.log(`Horario Pro listo en http://localhost:${port}`);
-});
+if (require.main === module) {
+  const server = http.createServer(handleRequest);
+
+  server.listen(port, () => {
+    console.log(`Horario Pro listo en http://localhost:${port}`);
+  });
+}
+
+module.exports = handleRequest;

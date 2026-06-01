@@ -56,7 +56,6 @@ let modalResolver = null;
 let selectedCourseId = null;
 let lastDownloadedProgress = "";
 let isProgressReminderOpen = false;
-let isReloadShortcut = false;
 
 function closeModal(result = false) {
   els.modal.hidden = true;
@@ -620,7 +619,6 @@ document.addEventListener("keydown", async (event) => {
   if (!els.courseModal.hidden && event.key === "Escape") closeCourseModal();
 
   const key = event.key.toLowerCase();
-  isReloadShortcut = event.key === "F5" || ((event.ctrlKey || event.metaKey) && key === "r");
   const isCloseShortcut = ((event.ctrlKey || event.metaKey) && key === "w") || (event.altKey && event.key === "F4");
   if (isCloseShortcut && shouldWarnBeforeClose()) {
     event.preventDefault();
@@ -628,11 +626,15 @@ document.addEventListener("keydown", async (event) => {
   }
 });
 
-window.addEventListener("beforeunload", (event) => {
-  if (isReloadShortcut || !shouldWarnBeforeClose()) return;
+function warnBeforeUnload(event) {
+  if (!shouldWarnBeforeClose()) return undefined;
   event.preventDefault();
-  event.returnValue = "";
-});
+  event.returnValue = "Descarga el avance antes de cerrar.";
+  return event.returnValue;
+}
+
+window.addEventListener("beforeunload", warnBeforeUnload);
+window.onbeforeunload = warnBeforeUnload;
 
 setupTimeSelects();
 loadLocal();
